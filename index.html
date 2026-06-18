@@ -225,6 +225,11 @@ async function cargarAgenda() {
           ${tieneAlerta ? `<div class="divider"></div><div class="info-row"><span class="info-label">Atención</span><span class="info-value"><span class="badge-alerta">⚠️ ${p['Analito especial']}</span></span></div>` : ''}
           ${tieneHorarioPaciente ? `<div class="divider"></div><div class="info-row"><span class="info-label">Solicitud</span><span class="info-value"><span class="badge-horario">🕐 Paciente solicitó: ${p['Horario solicitado paciente']}</span></span></div>` : ''}
           <div class="divider"></div>
+          <div class="horario-section" style="margin-bottom:0.75rem;">
+            <label>Novedad / Observación de la visita</label>
+            <textarea id="noved-${id}" placeholder="Ej: paciente agrega orina, requiere resultados urgentes, agrega estudios..." style="width:100%;padding:8px 11px;border:1px solid var(--verde-borde);border-radius:7px;font-size:13px;font-family:inherit;outline:none;background:white;resize:vertical;min-height:70px;line-height:1.5;" onblur="guardarNovedad('${id}', '${p['DNI']}', '${p['Fecha']}')">${p['Novedad bioquímico'] || ''}</textarea>
+            <p style="font-size:11px;color:#888;margin-top:4px;">El operador verá esta información para continuar la gestión.</p>
+          </div>
           <div class="horario-section">
             <label>Horario asignado</label>
             <div class="horario-confirmado" id="hconf-${id}" style="${horarioGuardado ? '' : 'display:none;'}">
@@ -251,6 +256,19 @@ function editarHorario(id) {
   document.getElementById(`hinput-${id}`).style.display = 'flex';
   const txt = document.getElementById(`htext-${id}`).textContent;
   document.getElementById(`hval-${id}`).value = txt;
+}
+
+async function guardarNovedad(id, dni, fecha) {
+  const val = document.getElementById(`noved-${id}`).value.trim();
+  if (!val) return;
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ accion: 'novedad', dni, fecha, novedad: val })
+    });
+  } catch(e) { console.error('Error guardando novedad'); }
 }
 
 async function guardarHorario(id, dni, fecha) {

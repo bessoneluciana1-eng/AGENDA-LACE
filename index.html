@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda LACE</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --verde: #00913f; --verde-oscuro: #006e30; --verde-claro: #e8f5ee; --verde-borde: #b2dcc2; }
+body { font-family: system-ui, sans-serif; background: #f4f6f4; min-height: 100vh; color: #1a1a1a; }
+
+.topbar { background: var(--verde); padding: 14px 1.25rem; }
+.topbar h1 { font-size: 16px; font-weight: 600; color: white; }
+.topbar p { font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 1px; }
+
+.login-wrap { max-width: 360px; margin: 3rem auto; padding: 0 1rem; }
+.login-card { background: white; border: 1px solid #dde8e1; border-radius: 14px; padding: 2rem; }
+.login-card h2 { font-size: 17px; font-weight: 600; color: var(--verde-oscuro); margin-bottom: 0.4rem; }
+.login-card p { font-size: 13px; color: #666; margin-bottom: 1.5rem; }
+.login-card select, .login-card input { width: 100%; padding: 10px 12px; border: 1px solid #ccddd4; border-radius: 8px; font-size: 14px; font-family: inherit; margin-bottom: 12px; outline: none; }
+.login-card select:focus, .login-card input:focus { border-color: var(--verde); box-shadow: 0 0 0 3px rgba(0,145,63,0.1); }
+.btn-login { width: 100%; padding: 11px; background: var(--verde); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-login:hover { background: var(--verde-oscuro); }
+.error-msg { font-size: 13px; color: #c0392b; background: #fdecea; border: 1px solid #f5c0b8; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; display: none; }
+
+.agenda-wrap { display: none; }
+.fecha-bar { background: white; border-bottom: 1px solid #dde8e1; padding: 10px 1.25rem; display: flex; align-items: center; justify-content: space-between; }
+.fecha-bar span { font-size: 13px; color: #555; }
+.fecha-bar strong { font-size: 14px; color: var(--verde-oscuro); }
+.equipo-bar { background: var(--verde-oscuro); padding: 8px 1.25rem; display: flex; align-items: center; justify-content: space-between; }
+.equipo-bar span { font-size: 14px; font-weight: 600; color: white; }
+.btn-salir { font-size: 12px; color: rgba(255,255,255,0.8); background: none; border: 1px solid rgba(255,255,255,0.4); border-radius: 5px; padding: 4px 10px; cursor: pointer; font-family: inherit; }
+.btn-salir:hover { background: rgba(255,255,255,0.1); }
+
+.container { padding: 1rem; max-width: 700px; margin: 0 auto; }
+.empty { text-align: center; padding: 3rem 1rem; color: #888; }
+.loading { text-align: center; padding: 3rem; color: #888; font-size: 14px; }
+
+.resumen { background: var(--verde); color: white; border-radius: 10px; padding: 12px 16px; margin-bottom: 1rem; display: flex; gap: 1.5rem; }
+.resumen-item span:first-child { font-size: 11px; opacity: 0.8; display: block; }
+.resumen-item span:last-child { font-size: 22px; font-weight: 700; }
+
+.paciente-card { background: white; border: 1px solid #dde8e1; border-radius: 12px; margin-bottom: 1rem; overflow: hidden; }
+.card-header { background: var(--verde-claro); padding: 12px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--verde-borde); }
+.card-num { width: 28px; height: 28px; background: var(--verde); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.card-nombre { font-size: 15px; font-weight: 600; color: var(--verde-oscuro); flex: 1; }
+.card-dni { font-size: 12px; color: #666; background: white; border: 1px solid var(--verde-borde); border-radius: 5px; padding: 3px 8px; white-space: nowrap; }
+
+.card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.info-row { display: flex; gap: 8px; align-items: flex-start; }
+.info-label { font-size: 11px; font-weight: 600; color: var(--verde-oscuro); text-transform: uppercase; letter-spacing: 0.05em; min-width: 80px; padding-top: 2px; flex-shrink: 0; }
+.info-value { font-size: 14px; color: #333; flex: 1; line-height: 1.5; }
+.info-value a { color: var(--verde); text-decoration: none; font-weight: 500; }
+.divider { height: 1px; background: #f0f5f2; }
+
+.badge-alerta { display: inline-block; padding: 3px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+.badge-horario { display: inline-block; padding: 3px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; background: #e8f5ee; color: var(--verde-oscuro); border: 1px solid var(--verde-borde); }
+
+.horario-section { background: var(--verde-claro); border: 1px solid var(--verde-borde); border-radius: 8px; padding: 12px; }
+.horario-section label { font-size: 12px; font-weight: 600; color: var(--verde-oscuro); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.horario-input-row { display: flex; gap: 8px; }
+.horario-input-row input { flex: 1; padding: 8px 11px; border: 1px solid var(--verde-borde); border-radius: 7px; font-size: 14px; font-family: inherit; outline: none; background: white; }
+.horario-input-row input:focus { border-color: var(--verde); box-shadow: 0 0 0 3px rgba(0,145,63,0.1); }
+.btn-guardar { padding: 8px 14px; background: var(--verde); color: white; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.btn-guardar:hover { background: var(--verde-oscuro); }
+.horario-confirmado { font-size: 14px; color: var(--verde-oscuro); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.btn-editar { background: none; border: none; color: var(--verde); font-size: 12px; cursor: pointer; text-decoration: underline; font-family: inherit; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>LACE Laboratorios</h1>
+  <p>Agenda de domicilios</p>
+</div>
+
+<div class="login-wrap" id="login-wrap">
+  <div class="login-card">
+    <h2>Ingresá a tu agenda</h2>
+    <p>Seleccioná tu equipo e ingresá la contraseña para ver los pacientes de mañana.</p>
+    <div class="error-msg" id="error-msg">Contraseña incorrecta. Intentá nuevamente.</div>
+    <select id="equipo-select">
+      <option value="">Seleccioná tu equipo...</option>
+      <option>Domislab</option>
+      <option>Zona Calera</option>
+      <option>Zona VCP</option>
+      <option>Villa María</option>
+      <option>Oncativo</option>
+      <option>Villa Dolores</option>
+      <option>Río Cuarto</option>
+      <option>LACE</option>
+    </select>
+    <input type="password" id="password-input" placeholder="Contraseña" onkeydown="if(event.key==='Enter') ingresar()" />
+    <button class="btn-login" onclick="ingresar()">Ingresar</button>
+  </div>
+</div>
+
+<div class="agenda-wrap" id="agenda-wrap">
+  <div class="equipo-bar">
+    <span id="equipo-label"></span>
+    <button class="btn-salir" onclick="salir()">Salir</button>
+  </div>
+  <div class="fecha-bar">
+    <span>Agenda del día</span>
+    <strong id="fecha-display"></strong>
+  </div>
+  <div class="container">
+    <div id="contenido" class="loading">Cargando agenda...</div>
+  </div>
+</div>
+
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQyx7t0Olo9ZISOg42JMbb27-GEOL7CBICIRKLqqO9TB56tJ1hhVu5toxdNM9kscWiU34YpFTnw6NSG/pub?gid=0&single=true&output=csv';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDTk9DwuD5hwUWxnJtRtFF4nKTYeVsRW-auPbcNO_4fVOAHPE_5Rkki7to2f3gdgbD/exec';
+
+const CLAVES = {
+  'Domislab': 'domislab2026',
+  'Zona Calera': 'calera2026',
+  'Zona VCP': 'vcp2026',
+  'Villa María': 'villamaria2026',
+  'Oncativo': 'oncativo2026',
+  'Villa Dolores': 'dolores2026',
+  'Río Cuarto': 'riocuarto2026',
+  'LACE': 'lace2026'
+};
+
+let equipoActivo = '';
+
+function manana() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+function formatFecha(iso) {
+  const [y,m,d] = iso.split('-');
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return `${parseInt(d)} de ${meses[parseInt(m)-1]} de ${y}`;
+}
+
+function ingresar() {
+  const equipo = document.getElementById('equipo-select').value;
+  const pass = document.getElementById('password-input').value;
+  const err = document.getElementById('error-msg');
+  if (!equipo) { err.textContent = 'Seleccioná tu equipo.'; err.style.display = 'block'; return; }
+  if (pass !== CLAVES[equipo]) { err.textContent = 'Contraseña incorrecta. Intentá nuevamente.'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  equipoActivo = equipo;
+  document.getElementById('login-wrap').style.display = 'none';
+  document.getElementById('agenda-wrap').style.display = 'block';
+  document.getElementById('equipo-label').textContent = equipo;
+  document.getElementById('fecha-display').textContent = formatFecha(manana());
+  cargarAgenda();
+}
+
+function salir() {
+  equipoActivo = '';
+  document.getElementById('login-wrap').style.display = 'block';
+  document.getElementById('agenda-wrap').style.display = 'none';
+  document.getElementById('password-input').value = '';
+  document.getElementById('equipo-select').value = '';
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n');
+  const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const vals = [];
+    let cur = '', inQ = false;
+    for (let c of line) {
+      if (c === '"') inQ = !inQ;
+      else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = (vals[i]||'').replace(/^"|"$/g,''));
+    return obj;
+  });
+}
+
+async function cargarAgenda() {
+  const contenido = document.getElementById('contenido');
+  contenido.innerHTML = '<div class="loading">Cargando agenda...</div>';
+  const fechaM = manana();
+  try {
+    const resp = await fetch(CSV_URL + '&t=' + Date.now());
+    const text = await resp.text();
+    const rows = parseCSV(text);
+    const pacientes = rows.filter(r => r['Fecha'] === fechaM && r['Equipo'] === equipoActivo);
+
+    if (pacientes.length === 0) {
+      contenido.innerHTML = `<div class="empty"><p>No hay pacientes registrados para mañana.</p></div>`;
+      return;
+    }
+
+    let html = `<div class="resumen"><div class="resumen-item"><span>Pacientes mañana</span><span>${pacientes.length}</span></div></div>`;
+
+    pacientes.forEach((p, i) => {
+      const id = `p${i}`;
+      const tieneAlerta = p['Analito especial'] && p['Analito especial'].trim();
+      const tieneHorarioPaciente = p['Horario solicitado paciente'] && p['Horario solicitado paciente'].trim();
+      const horarioGuardado = p['Horario asignado'] && p['Horario asignado'].trim();
+
+      html += `<div class="paciente-card">
+        <div class="card-header">
+          <div class="card-num">${i+1}</div>
+          <span class="card-nombre">${p['Apellido y nombre'] || '—'}</span>
+          <span class="card-dni">DNI ${p['DNI'] || '—'}</span>
+        </div>
+        <div class="card-body">
+          ${p['Teléfono'] ? `<div class="info-row"><span class="info-label">Teléfono</span><span class="info-value"><a href="tel:${p['Teléfono']}">${p['Teléfono']}</a></span></div><div class="divider"></div>` : ''}
+          <div class="info-row">
+            <span class="info-label">Dirección</span>
+            <span class="info-value">${p['Dirección'] || '—'}
+              ${p['Link Google Maps'] ? ` &nbsp;<a href="${p['Link Google Maps']}" target="_blank">📍 Maps</a>` : ''}
+              ${p['Referencia adicional'] ? `<br><span style="font-size:13px;color:#666;">${p['Referencia adicional']}</span>` : ''}
+            </span>
+          </div>
+          <div class="divider"></div>
+          <div class="info-row">
+            <span class="info-label">Estudios</span>
+            <span class="info-value" style="font-size:13px;">${p['Estudios solicitados'] || '—'}</span>
+          </div>
+          ${tieneAlerta ? `<div class="divider"></div><div class="info-row"><span class="info-label">Atención</span><span class="info-value"><span class="badge-alerta">⚠️ ${p['Analito especial']}</span></span></div>` : ''}
+          ${tieneHorarioPaciente ? `<div class="divider"></div><div class="info-row"><span class="info-label">Solicitud</span><span class="info-value"><span class="badge-horario">🕐 Paciente solicitó: ${p['Horario solicitado paciente']}</span></span></div>` : ''}
+          <div class="divider"></div>
+          <div class="horario-section">
+            <label>Horario asignado</label>
+            <div class="horario-confirmado" id="hconf-${id}" style="${horarioGuardado ? '' : 'display:none;'}">
+              ✓ <span id="htext-${id}">${horarioGuardado || ''}</span>
+              <button class="btn-editar" onclick="editarHorario('${id}')">Modificar</button>
+            </div>
+            <div class="horario-input-row" id="hinput-${id}" style="${horarioGuardado ? 'display:none;' : ''}">
+              <input type="text" placeholder="Ej: 7:30 - 8:00hs" id="hval-${id}" />
+              <button class="btn-guardar" onclick="guardarHorario('${id}', '${p['DNI']}', '${p['Fecha']}')">Confirmar</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    contenido.innerHTML = html;
+  } catch(e) {
+    contenido.innerHTML = '<div class="empty"><p>No se pudo cargar la agenda. Verificá la conexión.</p></div>';
+  }
+}
+
+function editarHorario(id) {
+  document.getElementById(`hconf-${id}`).style.display = 'none';
+  document.getElementById(`hinput-${id}`).style.display = 'flex';
+  const txt = document.getElementById(`htext-${id}`).textContent;
+  document.getElementById(`hval-${id}`).value = txt;
+}
+
+async function guardarHorario(id, dni, fecha) {
+  const val = document.getElementById(`hval-${id}`).value.trim();
+  if (!val) { alert('Ingresá el horario antes de confirmar.'); return; }
+  const btn = document.querySelector(`#hinput-${id} .btn-guardar`);
+  btn.textContent = 'Guardando...';
+  btn.disabled = true;
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ accion: 'horario', dni, fecha, horario: val })
+    });
+    document.getElementById(`htext-${id}`).textContent = val;
+    document.getElementById(`hconf-${id}`).style.display = 'flex';
+    document.getElementById(`hinput-${id}`).style.display = 'none';
+  } catch(e) {
+    alert('No se pudo guardar. Verificá la conexión.');
+  }
+  btn.textContent = 'Confirmar';
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
